@@ -6,4 +6,4 @@ Googleドライブに保存する、Mac・iPhone向け個人学習Webアプリ�
 
 依存パッケージなし。Node.js 22以降で `npm test`、プレビューは `python3 -m http.server 4173`。ブラウザで `http://localhost:4173` を開きます。実データを使うにはGoogle OAuthの設定が必要です。未設定でもサンプルモードを利用できます。
 
-公開はGitHub Pagesのmainブランチを使えます。テスト付きのGitHub Actionsワークフローも同梱しています。学習データ、ZIPバックアップ、Google認証トークン・シークレットはリポジトリに入れません。
+公開はGitHub Pagesのmainブランチを使えます。学習データ、ZIPバックアップ、Google認証トークン・シークレットはリポジトリに入れません。

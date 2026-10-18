@@ -9,7 +9,7 @@
 3. リポジトリの Settings → Pages → Build and deployment の Source を「Deploy from a branch」にします。
 4. Branchを「main」、フォルダを「/ (root)」にして保存します。Pagesに表示される公開URLを開きます。
 
-開発者向け：付属の`.github/workflows/pages.yml`とtestsフォルダも登録し、Sourceを「GitHub Actions」にするとテスト後に公開できます。
+開発者向け：配布ZIPに含まれる`.github/workflows/pages.yml`も登録し、Sourceを「GitHub Actions」にするとテスト後に公開できます。
 
 ## 2. Googleドライブをアプリに接続する
 
