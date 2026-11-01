@@ -1,5 +1,5 @@
-import {TYPES,fresh,rate,replay,dueCards,shuffle,exportCSV,importCSV,validateEvent} from './core.js';
-import {Drive} from './drive.js';
+import {TYPES,fresh,rate,replay,dueCards,shuffle,exportCSV,importCSV,validateEvent} from './core.js?v=20261101';
+import {Drive} from './drive.js?v=20261101';
 import {makeBackup,readBackup} from './zip.js';
 import {GOOGLE_CLIENT_ID} from './config.js';
 const $=s=>document.querySelector(s), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
