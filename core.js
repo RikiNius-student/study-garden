@@ -1,11 +1,18 @@
 export const TYPES={quick:{label:'一問一答',factor:1},explain:{label:'単語説明',factor:1},topic:{label:'トピック解説',factor:2}};
 export const DAY=86400000;
 export function fresh(){return {ok:0,retry:0,due:0,completed:false,last:null};}
-export function rate(previous,grade,type,now){
+function legacyRate(previous,grade,type,now){
  if(!['OK','微妙','NO'].includes(grade)||!TYPES[type])throw Error('評価または形式が不正です');
  const s={...fresh(),...previous};const factor=TYPES[type].factor;
  if(grade==='OK'){s.ok++;s.retry=0;s.completed=s.ok>=3;s.due=s.completed?null:now+[7,14][s.ok-1]*DAY*factor;}
  else{s.ok=0;s.completed=false;s.retry++;s.due=now+[.25,1,3,5][Math.min(s.retry-1,3)]*DAY*factor;}
+ s.last=grade;return s;
+}
+export function rate(previous,grade,type,now){
+ if(!['OK','微妙','NO'].includes(grade)||!TYPES[type])throw Error('評価または形式が不正です');
+ const s={...fresh(),...previous}, factor=TYPES[type].factor;
+ if(grade==='OK'){s.ok++;s.retry=0;s.completed=s.ok>=4;s.due=s.completed?null:now+[7,14,30][s.ok-1]*DAY*factor;}
+ else {s.retry=s.last==='OK'?2:s.retry+1;s.ok=0;s.completed=false;const days=grade==='微妙'?[.25,3,5]:[.25,1,3,5];s.due=now+days[Math.min(s.retry-1,days.length-1)]*DAY*factor;}
  s.last=grade;return s;
 }
 export function replay(input){
@@ -20,7 +27,7 @@ export function replay(input){
   }else if(e.kind==='card.rate'){
    const c=cards[e.entity];if(!c)continue;
    if(c.rev!==e.base){conflicts.push(e);continue;}
-   c.previousRating={target:e.id,schedule:{...c.schedule}};c.schedule=rate(c.schedule,e.grade,c.type,e.at);c.rev=e.id;
+   c.previousRating={target:e.id,schedule:{...c.schedule}};c.schedule=(e.ruleVersion===2?rate:legacyRate)(c.schedule,e.grade,c.type,e.at);c.rev=e.id;
   }else if(e.kind==='card.undo'){
    const c=cards[e.entity];if(c?.previousRating?.target===e.target && c.rev===e.base){c.schedule=c.previousRating.schedule;c.previousRating=null;c.rev=e.id;}else conflicts.push(e);
   }else if(e.kind==='card.restart'){

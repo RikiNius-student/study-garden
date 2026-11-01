@@ -2,10 +2,10 @@ const API='https://www.googleapis.com/drive/v3/files';
 const APP='study-garden-v1';
 export class Drive {
  constructor(clientId){this.clientId=clientId;this.token=null;this.expires=0;this.folder=null;this.account=null;}
- async connect(){
+ async connect({email='',switchAccount=false}={}){
   if(!globalThis.google?.accounts?.oauth2)throw Error('Googleの認証機能を読み込めません。通信を確認して再読み込みしてください。');
   if(!this.clientId.endsWith('.apps.googleusercontent.com'))throw Error('設定でGoogleクライアントIDを入力してください');
-  const result=await new Promise((resolve,reject)=>{const client=google.accounts.oauth2.initTokenClient({client_id:this.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.error?reject(Error(r.error)):resolve(r),error_callback:()=>reject(Error('Googleへの接続を完了できませんでした。もう一度お試しください。'))});client.requestAccessToken({prompt:'select_account'});});
+  const result=await new Promise((resolve,reject)=>{const client=google.accounts.oauth2.initTokenClient({client_id:this.clientId,scope:'https://www.googleapis.com/auth/drive.file',callback:r=>r.error?reject(Error(r.error)):resolve(r),error_callback:()=>reject(Error('Googleへの接続を完了できませんでした。もう一度お試しください。'))});client.requestAccessToken({prompt:switchAccount?'select_account':'',...(email&&!switchAccount?{login_hint:email}:{})});});
   this.token=result.access_token;this.expires=Date.now()+Number(result.expires_in)*1000-60000;
   const r=await this.request('https://www.googleapis.com/drive/v3/about?fields=user(permissionId,emailAddress)');this.account=(await r.json()).user;return this.account;
  }
