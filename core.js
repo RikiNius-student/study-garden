@@ -8,12 +8,17 @@ function legacyRate(previous,grade,type,now){
  else{s.ok=0;s.completed=false;s.retry++;s.due=now+[.25,1,3,5][Math.min(s.retry-1,3)]*DAY*factor;}
  s.last=grade;return s;
 }
-export function rate(previous,grade,type,now){
+function rateV2(previous,grade,type,now){
  if(!['OK','微妙','NO'].includes(grade)||!TYPES[type])throw Error('評価または形式が不正です');
  const s={...fresh(),...previous}, factor=TYPES[type].factor;
  if(grade==='OK'){s.ok++;s.retry=0;s.completed=s.ok>=4;s.due=s.completed?null:now+[7,14,30][s.ok-1]*DAY*factor;}
  else {s.retry=s.last==='OK'?2:s.retry+1;s.ok=0;s.completed=false;const days=grade==='微妙'?[.25,3,5]:[.25,1,3,5];s.due=now+days[Math.min(s.retry-1,days.length-1)]*DAY*factor;}
  s.last=grade;return s;
+}
+export function rate(previous,grade,type,now){
+ const s=rateV2(previous,grade,type,now);
+ if(grade==='NO')s.due=now+(s.retry===1?.25:1)*DAY*TYPES[type].factor;
+ return s;
 }
 export function replay(input){
  const events=[...new Map(input.map(e=>[e.id,e])).values()].sort((a,b)=>a.clock-b.clock||a.id.localeCompare(b.id));
@@ -27,7 +32,7 @@ export function replay(input){
   }else if(e.kind==='card.rate'){
    const c=cards[e.entity];if(!c)continue;
    if(c.rev!==e.base){conflicts.push(e);continue;}
-   c.previousRating={target:e.id,schedule:{...c.schedule}};c.schedule=(e.ruleVersion===2?rate:legacyRate)(c.schedule,e.grade,c.type,e.at);c.rev=e.id;
+   c.previousRating={target:e.id,schedule:{...c.schedule}};c.schedule=(e.ruleVersion===3?rate:e.ruleVersion===2?rateV2:legacyRate)(c.schedule,e.grade,c.type,e.at);c.rev=e.id;
   }else if(e.kind==='card.undo'){
    const c=cards[e.entity];if(c?.previousRating?.target===e.target && c.rev===e.base){c.schedule=c.previousRating.schedule;c.previousRating=null;c.rev=e.id;}else conflicts.push(e);
   }else if(e.kind==='card.restart'){

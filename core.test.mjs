@@ -5,7 +5,7 @@ const now=1700000000000;
 const card={type:'quick',genre:'g',question:'問い',answer:'答え',reference:'',images:[],paused:false};
 const ev=(id,kind,value={},base=null,clock=1)=>({id,kind,entity:'a',clock,at:now,base,...value});
 test('新OKは7日、14日、30日、4回目で完了',()=>{let s=fresh();for(const d of [7,14,30]){s=rate(s,'OK','quick',now);assert.equal(s.due,now+d*DAY);assert.equal(s.completed,false);}assert.equal(rate(s,'OK','quick',now).completed,true);});
-test('微妙とNOの新しい間隔',()=>{for(const [g,days] of [['微妙',[.25,3,5,5]],['NO',[.25,1,3,5,5]]]){let s=fresh();for(const d of days){s=rate(s,g,'quick',now);assert.equal(s.due,now+d*DAY);}}});
+test('微妙とNOの新しい間隔',()=>{for(const [g,days] of [['微妙',[.25,3,5,5]],['NO',[.25,1,1,1,1]]]){let s=fresh();for(const d of days){s=rate(s,g,'quick',now);assert.equal(s.due,now+d*DAY);}}});
 test('OKから微妙は3日、NOは1日。OKへ戻ると7日',()=>{const s=rate(fresh(),'OK','quick',now);for(const [g,d] of [['微妙',3],['NO',1]]){const t=rate(s,g,'quick',now);assert.equal(t.due,now+d*DAY);assert.equal(t.ok,0);assert.equal(rate(t,'OK','quick',now).due,now+7*DAY);}});
 test('トピックは新ルールも2倍',()=>{let s=fresh();for(const d of [14,28,60]){s=rate(s,'OK','topic',now);assert.equal(s.due,now+d*DAY);}assert.equal(rate(fresh(),'微妙','topic',now).due,now+.5*DAY);assert.equal(rate({ok:1,last:'OK'},'微妙','topic',now).due,now+6*DAY);});
 test('履歴の旧ルールは維持、新規評価のみ新ルール',()=>{let es=[ev('1','card.put',{value:card})];for(let i=2;i<=4;i++)es.push(ev(String(i),'card.rate',{grade:'OK'},String(i-1),i));assert.equal(replay(es).cards[0].schedule.completed,true);es=es.map(e=>e.kind==='card.rate'?{...e,ruleVersion:2}:e);assert.equal(replay(es).cards[0].schedule.completed,false);assert.equal(replay(es).cards[0].schedule.due,now+30*DAY);});
@@ -19,3 +19,11 @@ test('CSVは表計算の式として実行されない',()=>{const s=exportCSV([
 test('画像と履歴を含めたZIP完全往復',async()=>{const image='data:image/jpeg;base64,AQIDBA==';const events=[ev('1','card.put',{value:{...card,type:'explain',images:[image]}}),ev('2','card.rate',{grade:'OK'},'1',2)];const result=await readBackup(makeBackup(events));assert.deepEqual(result,events);assert.equal(replay(result).cards[0].schedule.due,now+7*DAY);});
 test('ZIP破損をCRCで検出',async()=>{const b=new Uint8Array(await zip({'a':'data'}).arrayBuffer());b[31]^=1;await assert.rejects(()=>unzip(new Blob([b])));});
 test('未対応画像や不正イベントは拒否',()=>{assert.throws(()=>validateEvent(ev('1','card.put',{value:{...card,images:['data:image/svg+xml;base64,AAAA']}})));assert.throws(()=>validateEvent(ev('1','card.rate',{grade:'maybe'})));assert.throws(()=>validateEvent({...ev('1','x'),clock:NaN}));});
+
+test('NOの旧予定を保持し、次の評価から1日、取り消すと旧予定に戻る',()=>{
+ const es=[ev('1','card.put',{value:card})];for(let i=2;i<=4;i++)es.push(ev(String(i),'card.rate',{grade:'NO',ruleVersion:2},String(i-1),i));
+ assert.equal(replay(es).cards[0].schedule.due,now+3*DAY);
+ es.push(ev('5','card.rate',{grade:'NO',ruleVersion:3},'4',5));assert.equal(replay(es).cards[0].schedule.due,now+DAY);
+ es.push(ev('6','card.undo',{target:'5'},'5',6));assert.equal(replay(es).cards[0].schedule.due,now+3*DAY);
+ let s=fresh();for(const d of [.5,2,2,2]){s=rate(s,'NO','topic',now);assert.equal(s.due,now+d*DAY);}
+});
